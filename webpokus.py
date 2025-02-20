@@ -194,11 +194,11 @@ def main():
                 fig_scatter.update_traces(textposition='top center')
                 st.plotly_chart(fig_scatter)
                 
-if page == "Head-to-Head Comparison":
+   elif page == "Head-to-Head Comparison":
     df = fetch_team_data()
     if df.empty:
         st.warning("No team data available.")
-     
+        return
 
     team_options = df["Team"].unique()
 
