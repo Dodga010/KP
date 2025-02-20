@@ -133,16 +133,18 @@ def generate_shot_chart(player_name):
     missed_shots = df_shots[df_shots["shot_result"] == "missed"]
     st.write(f"Total Shots: {len(df_shots)} | Made: {len(made_shots)} | Missed: {len(missed_shots)}")
 
-    # ✅ Ensure x/y coordinates are scaled correctly
-    df_shots["x_coord"] = df_shots["x_coord"] * 2.7  
-    df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.6)
+   # Adjust shot positions to match the court image scale
+    df_shots["x_coord"] = (df_shots["x_coord"] / 28) * 280  # Normalize x-coordinates
+    df_shots["y_coord"] = (df_shots["y_coord"] / 15) * 150  # Normalize y-coordinates
+
 
     # ✅ Load court image
     court_img = mpimg.imread("fiba_courtonly.jpg")
 
     # ✅ Create figure
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.imshow(court_img, extent=[0, 280, 0, 261], aspect="auto", alpha=0.8)  # Make court slightly transparent
+   fig, ax = plt.subplots(figsize=(10, 5))  # Maintain correct ratio
+    ax.set_aspect("equal")  # Keeps correct aspect ratio
+    ax.imshow(court_img, extent=[0, 280, 0, 150], aspect="auto", alpha=0.8)
 
     # ✅ Heatmap (density plot for shooting zones)
     sns.kdeplot(data=df_shots, x="x_coord", y="y_coord", cmap="coolwarm", fill=True, alpha=0.6, ax=ax, bw_adjust=0.5)
