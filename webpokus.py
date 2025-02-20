@@ -49,6 +49,23 @@ def fetch_team_data():
     df = pd.read_sql(query, conn)
     conn.close()
     return df
+    
+    def fetch_top_assist_teams():
+    if not table_exists("Teams"):
+        return pd.DataFrame()  
+
+    conn = sqlite3.connect(db_path)
+    query = """
+    SELECT name AS Team, AVG(assists) AS Avg_Assists
+    FROM Teams
+    GROUP BY name
+    ORDER BY Avg_Assists DESC
+    LIMIT 5;
+    """
+    df = pd.read_sql(query, conn)
+    conn.close()
+    return df
+
 
 # ✅ Fetch referee statistics with error handling
 def fetch_referee_data():
