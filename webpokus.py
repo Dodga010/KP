@@ -119,36 +119,41 @@ def generate_shot_chart(player_name):
     # Load court image
     court_img = mpimg.imread("fiba_courtonly.jpg")
 
-    # ✅ Scale coordinates to match court dimensions
+    # ✅ Fix coordinate scaling for correct positioning
     df_shots["x_coord"] = (df_shots["x_coord"] / 28) * 280  
-    df_shots["y_coord"] = (df_shots["y_coord"] / 15) * 150  
+    df_shots["y_coord"] = 150 - ((df_shots["y_coord"] / 15) * 150)  # Flip y-coordinates
+
+    # ✅ Debugging: Check transformed shot coordinates
+    st.write(df_shots.head())
 
     # ✅ Create figure
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.set_aspect("equal")
 
-    # ✅ Set court background with no extra white space
-    ax.imshow(court_img, extent=[0, 280, 0, 150], aspect="auto")
+    # ✅ Set court background with correct extent
+    ax.imshow(court_img, extent=[0, 280, 0, 150], aspect="auto", zorder=0)
 
-    # ✅ Plot individual shots (Made & Missed)
+    # ✅ Separate made & missed shots
     made_shots = df_shots[df_shots["shot_result"] == "made"]
     missed_shots = df_shots[df_shots["shot_result"] == "missed"]
 
+    # ✅ Plot individual shots with larger markers & visible edges
     ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
-               c="lime", edgecolors="black", s=80, alpha=0.9, zorder=3)
+               c="lime", edgecolors="black", s=150, alpha=0.9, zorder=3, label="Made Shots")
 
     ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
-               c="red", edgecolors="black", s=80, alpha=0.9, zorder=3)
+               c="red", edgecolors="black", s=150, alpha=0.9, zorder=3, label="Missed Shots")
 
     # ✅ Remove all axis elements (clean chart)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-    ax.axis("off")  # Completely remove axis lines and labels
+    ax.axis("off")  # Hide axis
 
-    # ✅ Display the chart
+    # ✅ Display chart in Streamlit
     st.pyplot(fig)
+
 
 
 # ✅ Main Function
