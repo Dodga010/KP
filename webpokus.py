@@ -98,6 +98,8 @@ def fetch_players():
 
 # ✅ Generate Shot Chart for Selected Player
 def generate_shot_chart(player_name):
+    """Generate a shot chart that correctly plots shots with proper scaling."""
+
     if not os.path.exists("fiba_courtonly.jpg"):
         st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
         return
@@ -115,38 +117,57 @@ def generate_shot_chart(player_name):
         st.warning(f"❌ No shot data found for {player_name}.")
         return
 
-    # Load court image
+    # ✅ Debugging: Check what shot_result values exist
+    st.write("Shot Data Sample:", df_shots.head())
+    st.write("Unique Shot Results:", df_shots["shot_result"].unique())
+
+    # ✅ Convert shot_result to match 'made' or 'missed' conditions
+    if df_shots["shot_result"].dtype != object:
+        df_shots["shot_result"] = df_shots["shot_result"].astype(str)
+
+    df_shots["shot_result"] = df_shots["shot_result"].replace({"1": "made", "0": "missed"})
+
+    # ✅ Scale coordinates to match court image dimensions
+    df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
+    df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.61)
+
+    # ✅ Debugging: Check transformed coordinates
+    st.write("Transformed Coordinates:", df_shots.head())
+
+    # ✅ Load court image
     court_img = mpimg.imread("fiba_courtonly.jpg")
 
-    # Scale coordinates to match court image dimensions
-    df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
-    df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.61)  
-
-    # Create figure
+    # ✅ Create figure
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.imshow(court_img, extent=[0, 280, 0, 261], aspect="auto")
 
-    # Heatmap (density plot for shooting zones)
+    # ✅ Heatmap (density plot for shooting zones)
     sns.kdeplot(data=df_shots, x="x_coord", y="y_coord", cmap="coolwarm", fill=True, alpha=0.6, ax=ax, bw_adjust=0.5)
 
-    # Plot individual shots
+    # ✅ Separate made & missed shots
     made_shots = df_shots[df_shots["shot_result"] == "made"]
     missed_shots = df_shots[df_shots["shot_result"] == "missed"]
 
-    ax.scatter(made_shots["x_coord"], made_shots["y_coord"], c="lime", edgecolors="black", s=60, label="Made Shots", alpha=0.8)
-    ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], c="red", edgecolors="black", s=60, label="Missed Shots", alpha=0.8)
+    # ✅ Debugging: Check if made/missed shots exist
+    st.write(f"Total Shots: {len(df_shots)}, Made: {len(made_shots)}, Missed: {len(missed_shots)}")
 
-    # Remove axis labels
+    # ✅ Plot individual shots with large visible markers
+    ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
+               c="lime", edgecolors="black", s=150, alpha=1, zorder=3, label="Made Shots")
+
+    ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
+               c="red", edgecolors="black", s=150, alpha=1, zorder=3, label="Missed Shots")
+
+    # ✅ Remove all axis elements (clean chart)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+    ax.axis("off")  # Hide axis
 
-    # Title
-    ax.text(140, 270, f"Shot Chart - {player_name}", fontsize=14, color="white", ha="center", fontweight="bold", bbox=dict(facecolor='black', alpha=0.6))
-
-    plt.legend()
+    # ✅ Display chart in Streamlit
     st.pyplot(fig)
+
 
 # ✅ Main Function
 def main():
