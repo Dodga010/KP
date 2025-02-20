@@ -115,6 +115,7 @@ def generate_shot_chart(player_name):
     if not os.path.exists("fiba_courtonly.jpg"):
     st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
 
+
     # Scale coordinates to match court image dimensions
     df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
     df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.61)  
