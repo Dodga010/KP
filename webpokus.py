@@ -151,12 +151,13 @@ def generate_shot_chart(player_name):
     # ✅ Debugging: Check if made/missed shots exist
     st.write(f"Total Shots: {len(df_shots)}, Made: {len(made_shots)}, Missed: {len(missed_shots)}")
 
-    # ✅ Plot individual shots with large visible markers
-    ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
-               c="lime", edgecolors="black", s=150, alpha=1, zorder=3, label="Made Shots")
+    # ✅ Try different shot marker styles
+ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
+           c="deepskyblue", edgecolors="black", s=60, alpha=0.9, marker="o", label="Made Shots")
 
-    ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
-               c="red", edgecolors="black", s=150, alpha=1, zorder=3, label="Missed Shots")
+ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
+           c="tomato", edgecolors="black", s=60, alpha=0.9, marker="x", label="Missed Shots")
+
 
     # ✅ Remove all axis elements (clean chart)
     ax.set_xticks([])
