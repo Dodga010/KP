@@ -45,22 +45,21 @@ def fetch_team_data():
     conn.close()
     return df
 
-# ✅ NEW: Fetch top 5 teams by assists per game
-def fetch_top_assist_teams():
+def fetch_assists_vs_turnovers():
     if not table_exists("Teams"):
         return pd.DataFrame()  
 
     conn = sqlite3.connect(db_path)
     query = """
-    SELECT name AS Team, AVG(assists) AS Avg_Assists
+    SELECT name AS Team, AVG(assists) AS Avg_Assists, AVG(turnovers) AS Avg_Turnovers
     FROM Teams
     GROUP BY name
-    ORDER BY Avg_Assists DESC
-    LIMIT 5;
+    ORDER BY Avg_Assists DESC;
     """
     df = pd.read_sql(query, conn)
     conn.close()
     return df
+
 
 # ✅ Fetch referee statistics
 def fetch_referee_data():
@@ -90,7 +89,7 @@ def main():
     # Sidebar navigation
     page = st.sidebar.selectbox("📌 Choose a page", ["Team Season Boxscore", "Head-to-Head Comparison", "Referee Stats"])
 
-    if page == "Team Season Boxscore":
+        elif page == "Team Season Boxscore":
         df = fetch_team_data()
 
         if df.empty:
@@ -109,14 +108,23 @@ def main():
                          barmode="group")
             st.plotly_chart(fig)
 
-            # ✅ NEW: Top 5 Teams by Assists Per Game
-            st.subheader("🏆 Top 5 Teams with Most Assists Per Game")
-            top_assists_df = fetch_top_assist_teams()
+            # ✅ REPLACE Top Assists Table with Assists vs Turnovers Graph
+            st.subheader("📉 Assists vs. Turnovers (Lost Plays)")
+            assists_turnovers_df = fetch_assists_vs_turnovers()
 
-            if top_assists_df.empty:
-                st.warning("No data available for assists.")
+            if assists_turnovers_df.empty:
+                st.warning("No data available for assists vs. turnovers.")
             else:
-                st.dataframe(top_assists_df.style.format({"Avg_Assists": "{:.1f}"}))
+                fig_scatter = px.scatter(
+                    assists_turnovers_df, x="Avg_Turnovers", y="Avg_Assists",
+                    text="Team",
+                    labels={"Avg_Turnovers": "Average Turnovers Per Game", "Avg_Assists": "Average Assists Per Game"},
+                    title="Assists vs. Turnovers - Playmaking vs. Lost Plays",
+                    color="Avg_Assists", size="Avg_Assists",
+                )
+                fig_scatter.update_traces(textposition='top center')
+                st.plotly_chart(fig_scatter)
+
 
     elif page == "Head-to-Head Comparison":
         df = fetch_team_data()
