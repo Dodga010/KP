@@ -112,8 +112,9 @@ def generate_shot_chart(player_name):
 
     # Load court image
     import os
-    if not os.path.exists("fiba_courtonly.jpg"):
-    st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
+   if not os.path.exists("fiba_courtonly.jpg"):
+    print("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
+    exit()
 
 
     # Scale coordinates to match court image dimensions
