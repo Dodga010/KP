@@ -153,10 +153,10 @@ def generate_shot_chart(player_name):
 
     # ✅ Plot individual shots with large visible markers
     ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
-               c="lime", edgecolors="black", s=100, alpha=1, zorder=3, label="Made Shots")
+               c="lime", edgecolors="black", s=50, alpha=1, zorder=3, label="Made Shots")
 
     ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
-               c="red", edgecolors="black", s=100, alpha=1, zorder=3, label="Missed Shots")
+               c="red", edgecolors="black", s=50, alpha=1, zorder=3, label="Missed Shots")
 
     # ✅ Remove all axis elements (clean chart)
     ax.set_xticks([])
