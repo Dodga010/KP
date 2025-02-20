@@ -3,7 +3,9 @@ import sqlite3
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import seaborn as sns
 # ✅ Define SQLite database path (works locally & online)
 db_path = os.path.join(os.path.dirname(__file__), "database.db")
 
@@ -81,6 +83,66 @@ def fetch_referee_data():
     df = pd.read_sql(query, conn)
     conn.close()
     return df
+
+def fetch_players():
+    """Retrieve unique player names from the database for dropdown selection."""
+    if not table_exists("Shots"):
+        return []
+
+    conn = sqlite3.connect(db_path)
+    query = "SELECT DISTINCT player_name FROM Shots ORDER BY player_name;"
+    players = pd.read_sql(query, conn)["player_name"].tolist()
+    conn.close()
+    return players
+
+def generate_shot_chart(player_name):
+    """Generate a shot chart for a specific player and display it in Streamlit."""
+    conn = sqlite3.connect(db_path)
+    query = """
+    SELECT x_coord, y_coord, shot_result
+    FROM Shots 
+    WHERE player_name = ?;
+    """
+    df_shots = pd.read_sql_query(query, conn, params=(player_name,))
+    conn.close()
+
+    if df_shots.empty:
+        st.warning(f"❌ No shot data found for {player_name}.")
+        return
+
+    # Load court image
+    court_img = mpimg.imread("fiba_courtonly.jpg")
+
+    # Scale coordinates to match court image dimensions
+    df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
+    df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.61)  
+
+    # Create figure
+    fig, ax = plt.subplots(figsize=(8, 6))
+    ax.imshow(court_img, extent=[0, 280, 0, 261], aspect="auto")  
+
+    # Heatmap (density plot for shooting zones)
+    sns.kdeplot(data=df_shots, x="x_coord", y="y_coord", cmap="coolwarm", fill=True, alpha=0.6, ax=ax, bw_adjust=0.5)
+
+    # Plot individual shots
+    made_shots = df_shots[df_shots["shot_result"] == "made"]
+    missed_shots = df_shots[df_shots["shot_result"] == "missed"]
+    
+    ax.scatter(made_shots["x_coord"], made_shots["y_coord"], c="lime", edgecolors="black", s=60, label="Made Shots", alpha=0.8)
+    ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], c="red", edgecolors="black", s=60, label="Missed Shots", alpha=0.8)
+
+    # Remove axis labels
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+
+    # Title
+    ax.text(140, 270, f"Shot Chart - {player_name}", fontsize=14, color="white", ha="center", fontweight="bold", bbox=dict(facecolor='black', alpha=0.6))
+
+    plt.legend()
+    st.pyplot(fig)
+
 
 def main():
     st.title("🏀 Basketball Stats Viewer")
@@ -182,6 +244,22 @@ def main():
                                  title="Average Fouls Per Game by Referee",
                                  color="Referee")
             st.plotly_chart(fig_referee)
+
+    elif page == "Shot Chart":
+        st.subheader("🎯 Player Shot Chart")
+
+        # Fetch available players
+        players = fetch_players()
+        
+        if not players:
+            st.warning("No player data available.")
+        else:
+            # User selects a player
+            player_name = st.selectbox("Select a Player", players)
+
+            # Generate the shot chart
+            generate_shot_chart(player_name)
+
 
 if __name__ == "__main__":
     main()
