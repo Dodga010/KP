@@ -177,7 +177,7 @@ def main():
             numeric_cols = df.select_dtypes(include=['number']).columns
             st.dataframe(df.style.format({col: "{:.1f}" for col in numeric_cols}))
 
-   elif page == "Head-to-Head Comparison":  # ✅ FIXED INDENTATION
+    elif page == "Head-to-Head Comparison":  # ✅ FIXED INDENTATION
     df = fetch_team_data()
 
     if df.empty:
