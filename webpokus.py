@@ -267,14 +267,14 @@ def main():
                                  color="Referee")
             st.plotly_chart(fig_referee)
 
-    elif page == "Shot Chart":
-        st.subheader("🎯 Player Shot Chart")
-        players = fetch_players()
-        if not players:
-            st.warning("No player data available.")
-        else:
-            player_name = st.selectbox("Select a Player", players)
-            generate_shot_chart(player_name)
+   elif page == "Shot Chart":
+    st.subheader("🎯 Player Shot Chart")
+    players = fetch_players()
+    if not players:
+        st.warning("No player data available.")
+    else:
+        player_name = st.selectbox("Select a Player", players)
+        generate_shot_chart(player_name)  # ✅ This now includes player stats!
 
 if __name__ == "__main__":
     main()
