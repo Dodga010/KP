@@ -193,6 +193,63 @@ def main():
                 )
                 fig_scatter.update_traces(textposition='top center')
                 st.plotly_chart(fig_scatter)
+     elif page == "Head-to-Head Comparison":
+        df = fetch_team_data()
+        if df.empty:
+            st.warning("No team data available.")
+            return
+
+        team_options = df["Team"].unique()
+
+        # Select two teams to compare
+        st.subheader("🔄 Compare Two Teams Head-to-Head")
+        team1 = st.selectbox("Select Team 1", team_options)
+        team2 = st.selectbox("Select Team 2", team_options)
+
+        if team1 != team2:
+            st.subheader(f"📊 Season Stats Comparison: {team1} vs {team2}")
+
+            numeric_cols = df.columns[3:]  # Exclude 'Team', 'Location', 'Games_Played'
+            team1_stats = df[df["Team"] == team1][numeric_cols]
+            team2_stats = df[df["Team"] == team2][numeric_cols]
+
+            if team1_stats.empty or team2_stats.empty:
+                st.error("⚠️ Error: One or both teams have no recorded stats.")
+            else:
+                # Transpose and keep correct stat names
+                team1_stats = team1_stats.T.rename(columns={team1_stats.index[0]: "Value"})
+                team2_stats = team2_stats.T.rename(columns={team2_stats.index[0]: "Value"})
+
+                # Ensure both teams have the same stats for comparison
+                team1_stats, team2_stats = team1_stats.align(team2_stats, join='outer', axis=0, fill_value=0)
+                team1_stats["Stat"] = team1_stats.index
+                team2_stats["Stat"] = team2_stats.index
+
+                # 📊 Separate bar charts for each team
+                st.subheader(f"📉 {team1} Stats Per Game")
+                fig1 = px.bar(team1_stats, x="Stat", y="Value", title=f"{team1} Stats Per Game", color="Stat")
+                st.plotly_chart(fig1)
+
+                st.subheader(f"📉 {team2} Stats Per Game")
+                fig2 = px.bar(team2_stats, x="Stat", y="Value", title=f"{team2} Stats Per Game", color="Stat")
+                st.plotly_chart(fig2)
+
+    elif page == "Referee Stats":
+        df_referee = fetch_referee_data()
+
+        if df_referee.empty:
+            st.warning("No referee data available.")
+        else:
+            st.subheader("🦺 Referee Statistics")
+            st.dataframe(df_referee.style.format({"Avg_Fouls_per_Game": "{:.1f}"}))
+
+            # 📊 Interactive bar chart for referees
+            st.subheader("📉 Referee Stats: Average Fouls Called Per Game")
+            fig_referee = px.bar(df_referee, x="Referee", y="Avg_Fouls_per_Game",
+                                 labels={'Avg_Fouls_per_Game': 'Avg Fouls per Game'},
+                                 title="Average Fouls Per Game by Referee",
+                                 color="Referee")
+            st.plotly_chart(fig_referee)
 
     elif page == "Shot Chart":
         st.subheader("🎯 Player Shot Chart")
