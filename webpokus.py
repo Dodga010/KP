@@ -142,7 +142,7 @@ def generate_shot_chart(player_name):
     ax.imshow(court_img, extent=[0, 280, 0, 261], aspect="auto")
 
     # ✅ Heatmap (density plot for shooting zones)
-    sns.kdeplot(data=df_shots, x="x_coord", y="y_coord", cmap="coolwarm", fill=True, alpha=0.4, ax=ax, bw_adjust=0.3)
+    sns.kdeplot(data=df_shots, x="x_coord", y="y_coord", cmap="coolwarm", fill=True, alpha=0.6, ax=ax, bw_adjust=0.5)
 
     # ✅ Separate made & missed shots
     made_shots = df_shots[df_shots["shot_result"] == "made"]
