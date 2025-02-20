@@ -97,17 +97,17 @@ def fetch_players():
     return players
 
 def generate_shot_chart(player_name):
-    """Generate a clean shot chart with only shots and the court background."""
-    
+    """Generate a shot chart that correctly plots shots with proper scaling."""
+
     if not os.path.exists("fiba_courtonly.jpg"):
         st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
         return
 
     conn = sqlite3.connect(db_path)
     query = """
-    SELECT x_coord, y_coord, shot_result
+    SELECT x AS x_coord, y AS y_coord, r AS shot_result
     FROM Shots 
-    WHERE player_name = ?;
+    WHERE player = ?;
     """
     df_shots = pd.read_sql_query(query, conn, params=(player_name,))
     conn.close()
@@ -116,33 +116,40 @@ def generate_shot_chart(player_name):
         st.warning(f"❌ No shot data found for {player_name}.")
         return
 
-    # Load court image
-    court_img = mpimg.imread("fiba_courtonly.jpg")
+    # ✅ Debug: Print first 5 rows to check correct values
+    st.write("Raw Shot Data:", df_shots.head())
 
-    # ✅ Fix coordinate scaling for correct positioning
-    df_shots["x_coord"] = (df_shots["x_coord"] / 28) * 280  
+    # ✅ Fix shot result mapping (0 = Missed, 1 = Made)
+    df_shots["shot_result"] = df_shots["shot_result"].astype(int)
+    df_shots["shot_result"] = df_shots["shot_result"].replace({0: "missed", 1: "made"})
+
+    # ✅ Correct coordinate scaling to match court image (28m x 15m full court)
+    df_shots["x_coord"] = (df_shots["x_coord"] / 28) * 280  # Normalize width
     df_shots["y_coord"] = 150 - ((df_shots["y_coord"] / 15) * 150)  # Flip y-coordinates
 
-    # ✅ Debugging: Check transformed shot coordinates
-    st.write(df_shots.head())
+    # ✅ Debug: Show transformed coordinates
+    st.write("Transformed Coordinates:", df_shots.head())
+
+    # ✅ Load court image
+    court_img = mpimg.imread("fiba_courtonly.jpg")
 
     # ✅ Create figure
     fig, ax = plt.subplots(figsize=(10, 5))
     ax.set_aspect("equal")
 
-    # ✅ Set court background with correct extent
-    ax.imshow(court_img, extent=[0, 280, 0, 150], aspect="auto", zorder=0)
+    # ✅ Display court background
+    ax.imshow(court_img, extent=[0, 280, 0, 150], aspect="auto")
 
     # ✅ Separate made & missed shots
     made_shots = df_shots[df_shots["shot_result"] == "made"]
     missed_shots = df_shots[df_shots["shot_result"] == "missed"]
 
-    # ✅ Plot individual shots with larger markers & visible edges
+    # ✅ Plot individual shots with large visible markers
     ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
-               c="lime", edgecolors="black", s=150, alpha=0.9, zorder=3, label="Made Shots")
+               c="lime", edgecolors="black", s=150, alpha=1, zorder=3, label="Made Shots")
 
     ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
-               c="red", edgecolors="black", s=150, alpha=0.9, zorder=3, label="Missed Shots")
+               c="red", edgecolors="black", s=150, alpha=1, zorder=3, label="Missed Shots")
 
     # ✅ Remove all axis elements (clean chart)
     ax.set_xticks([])
