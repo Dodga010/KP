@@ -177,7 +177,7 @@ def main():
             numeric_cols = df.select_dtypes(include=['number']).columns
             st.dataframe(df.style.format({col: "{:.1f}" for col in numeric_cols}))
 
-    elif page == "Head-to-Head Comparison":  # ✅ FIXED INDENTATION
+elif page == "Head-to-Head Comparison":  
     df = fetch_team_data()
 
     if df.empty:
@@ -190,7 +190,7 @@ def main():
         team1 = st.selectbox("Select Team 1", team_options, key="team1")
         team2 = st.selectbox("Select Team 2", team_options, key="team2")
 
-        if team1 and team2 and team1 != team2:  # ✅ FIXED INDENTATION
+        if team1 and team2 and team1 != team2:
             st.subheader(f"📊 {team1} vs {team2} - Statistical Comparison")
 
             numeric_cols = df.columns[2:]  # Exclude 'Team' and 'Location'
@@ -226,6 +226,7 @@ def main():
                     st.error("⚠️ Data inconsistency: The selected teams have mismatched statistics.")
         else:
             st.warning("Please select two different teams for comparison.")
+
 
     elif page == "Referee Stats":
         df_referee = fetch_referee_data()
