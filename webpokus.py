@@ -177,53 +177,55 @@ def main():
             numeric_cols = df.select_dtypes(include=['number']).columns
             st.dataframe(df.style.format({col: "{:.1f}" for col in numeric_cols}))
 
-    elif page == "Head-to-Head Comparison":  # ✅ FIXED INDENTATION
-        df = fetch_team_data()
+   elif page == "Head-to-Head Comparison":  # ✅ FIXED INDENTATION
+    df = fetch_team_data()
 
-        if df.empty:
-            st.warning("No team data available.")
-        else:
-            team_options = df["Team"].unique()
-
-            # Team Selection
-            st.subheader("🔄 Compare Two Teams Head-to-Head")
-            team1 = st.selectbox("Select Team 1", team_options, key="team1")
-            team2 = st.selectbox("Select Team 2", team_options, key="team2")
-
-           if team1 and team2 and team1 != team2:
-    st.subheader(f"📊 {team1} vs {team2} - Statistical Comparison")
-
-    numeric_cols = df.columns[2:]  # Exclude 'Team' and 'Location'
-    team1_stats = df[df["Team"] == team1][numeric_cols].reset_index(drop=True)
-    team2_stats = df[df["Team"] == team2][numeric_cols].reset_index(drop=True)
-
-    if team1_stats.empty or team2_stats.empty:
-        st.error("⚠️ Error: One or both teams have no recorded stats.")
+    if df.empty:
+        st.warning("No team data available.")
     else:
-        # ✅ Ensure both teams have the same number of statistics
-        team1_stats, team2_stats = team1_stats.align(team2_stats, join="outer", axis=1, fill_value=0)
+        team_options = df["Team"].unique()
 
-        # ✅ Create a DataFrame for comparison
-        comparison_df = pd.concat([team1_stats.T, team2_stats.T], axis=1)
-        
-        # ✅ Ensure the column count matches before renaming
-        if comparison_df.shape[1] == 2:
-            comparison_df.columns = [team1, team2]
-            comparison_df["Stat"] = comparison_df.index
+        # Team Selection
+        st.subheader("🔄 Compare Two Teams Head-to-Head")
+        team1 = st.selectbox("Select Team 1", team_options, key="team1")
+        team2 = st.selectbox("Select Team 2", team_options, key="team2")
 
-            # 📊 Side-by-side Bar Chart
-            st.subheader("📉 Statistical Comparison")
-            fig = px.bar(comparison_df, x="Stat", y=[team1, team2],
-                         barmode="group", title=f"{team1} vs {team2} Performance",
-                         labels={"value": "Statistical Value", "Stat": "Statistic"})
-            st.plotly_chart(fig)
+        if team1 and team2 and team1 != team2:  # ✅ FIXED INDENTATION
+            st.subheader(f"📊 {team1} vs {team2} - Statistical Comparison")
 
-            # 📈 Radar Chart for Overview (Optional)
-            radar_chart = px.line_polar(comparison_df, r=[team1, team2], theta="Stat",
-                                        line_close=True, title="Radar Chart Comparison")
-            st.plotly_chart(radar_chart)
+            numeric_cols = df.columns[2:]  # Exclude 'Team' and 'Location'
+            team1_stats = df[df["Team"] == team1][numeric_cols].reset_index(drop=True)
+            team2_stats = df[df["Team"] == team2][numeric_cols].reset_index(drop=True)
+
+            if team1_stats.empty or team2_stats.empty:
+                st.error("⚠️ Error: One or both teams have no recorded stats.")
+            else:
+                # ✅ Ensure both teams have the same number of statistics
+                team1_stats, team2_stats = team1_stats.align(team2_stats, join="outer", axis=1, fill_value=0)
+
+                # ✅ Create a DataFrame for comparison
+                comparison_df = pd.concat([team1_stats.T, team2_stats.T], axis=1)
+
+                # ✅ Ensure the column count matches before renaming
+                if comparison_df.shape[1] == 2:
+                    comparison_df.columns = [team1, team2]
+                    comparison_df["Stat"] = comparison_df.index
+
+                    # 📊 Side-by-side Bar Chart
+                    st.subheader("📉 Statistical Comparison")
+                    fig = px.bar(comparison_df, x="Stat", y=[team1, team2],
+                                 barmode="group", title=f"{team1} vs {team2} Performance",
+                                 labels={"value": "Statistical Value", "Stat": "Statistic"})
+                    st.plotly_chart(fig)
+
+                    # 📈 Radar Chart for Overview (Optional)
+                    radar_chart = px.line_polar(comparison_df, r=[team1, team2], theta="Stat",
+                                                line_close=True, title="Radar Chart Comparison")
+                    st.plotly_chart(radar_chart)
+                else:
+                    st.error("⚠️ Data inconsistency: The selected teams have mismatched statistics.")
         else:
-            st.error("⚠️ Data inconsistency: The selected teams have mismatched statistics.")
+            st.warning("Please select two different teams for comparison.")
 
     elif page == "Referee Stats":
         df_referee = fetch_referee_data()
