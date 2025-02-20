@@ -96,8 +96,9 @@ def fetch_players():
     conn.close()
     return players
 
-# ✅ Generate Shot Chart for Selected Player
 def generate_shot_chart(player_name):
+    """Generate a clean shot chart with only shots and the court background."""
+    
     if not os.path.exists("fiba_courtonly.jpg"):
         st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
         return
@@ -118,35 +119,37 @@ def generate_shot_chart(player_name):
     # Load court image
     court_img = mpimg.imread("fiba_courtonly.jpg")
 
-    # Scale coordinates to match court image dimensions
-    df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
-    df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.61)  
+    # ✅ Scale coordinates to match court dimensions
+    df_shots["x_coord"] = (df_shots["x_coord"] / 28) * 280  
+    df_shots["y_coord"] = (df_shots["y_coord"] / 15) * 150  
 
-    # Create figure
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.imshow(court_img, extent=[0, 280, 0, 261], aspect="auto")
+    # ✅ Create figure
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.set_aspect("equal")
 
-    # Heatmap (density plot for shooting zones)
-    sns.kdeplot(data=df_shots, x="x_coord", y="y_coord", cmap="coolwarm", fill=True, alpha=0.6, ax=ax, bw_adjust=0.5)
+    # ✅ Set court background with no extra white space
+    ax.imshow(court_img, extent=[0, 280, 0, 150], aspect="auto")
 
-    # Plot individual shots
+    # ✅ Plot individual shots (Made & Missed)
     made_shots = df_shots[df_shots["shot_result"] == "made"]
     missed_shots = df_shots[df_shots["shot_result"] == "missed"]
 
-    ax.scatter(made_shots["x_coord"], made_shots["y_coord"], c="lime", edgecolors="black", s=60, label="Made Shots", alpha=0.8)
-    ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], c="red", edgecolors="black", s=60, label="Missed Shots", alpha=0.8)
+    ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
+               c="lime", edgecolors="black", s=80, alpha=0.9, zorder=3)
 
-    # Remove axis labels
+    ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
+               c="red", edgecolors="black", s=80, alpha=0.9, zorder=3)
+
+    # ✅ Remove all axis elements (clean chart)
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_xticklabels([])
     ax.set_yticklabels([])
+    ax.axis("off")  # Completely remove axis lines and labels
 
-    # Title
-    ax.text(140, 270, f"Shot Chart - {player_name}", fontsize=14, color="white", ha="center", fontweight="bold", bbox=dict(facecolor='black', alpha=0.6))
-
-    plt.legend()
+    # ✅ Display the chart
     st.pyplot(fig)
+
 
 # ✅ Main Function
 def main():
