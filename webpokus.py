@@ -96,9 +96,9 @@ def fetch_players():
     conn.close()
     return players
 
-# ✅ Generate Shot Chart for Selected Player
+
 def generate_shot_chart(player_name):
-    """Generate a shot chart that correctly plots shots with proper scaling."""
+    """Generate a properly scaled shot chart with clear markers and a court background."""
 
     if not os.path.exists("fiba_courtonly.jpg"):
         st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
@@ -106,9 +106,9 @@ def generate_shot_chart(player_name):
 
     conn = sqlite3.connect(db_path)
     query = """
-    SELECT x_coord, y_coord, shot_result
+    SELECT x AS x_coord, y AS y_coord, r AS shot_result
     FROM Shots 
-    WHERE player_name = ?;
+    WHERE player = ?;
     """
     df_shots = pd.read_sql_query(query, conn, params=(player_name,))
     conn.close()
@@ -117,57 +117,48 @@ def generate_shot_chart(player_name):
         st.warning(f"❌ No shot data found for {player_name}.")
         return
 
-    # ✅ Debugging: Check what shot_result values exist
-    st.write("Shot Data Sample:", df_shots.head())
-    st.write("Unique Shot Results:", df_shots["shot_result"].unique())
+    # ✅ Fix shot result mapping (0 = Missed, 1 = Made)
+    df_shots["shot_result"] = df_shots["shot_result"].astype(int)
+    df_shots["shot_result"] = df_shots["shot_result"].replace({0: "missed", 1: "made"})
 
-    # ✅ Convert shot_result to match 'made' or 'missed' conditions
-    if df_shots["shot_result"].dtype != object:
-        df_shots["shot_result"] = df_shots["shot_result"].astype(str)
-
-    df_shots["shot_result"] = df_shots["shot_result"].replace({"1": "made", "0": "missed"})
-
-    # ✅ Scale coordinates to match court image dimensions
-    df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
-    df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.61)
-
-    # ✅ Debugging: Check transformed coordinates
-    st.write("Transformed Coordinates:", df_shots.head())
+    # ✅ Scale coordinates to match the court image dimensions (28m x 15m FIBA Court)
+    df_shots["x_coord"] = (df_shots["x_coord"] / 28) * 280  # Normalize width
+    df_shots["y_coord"] = 150 - ((df_shots["y_coord"] / 15) * 150)  # Flip y-coordinates
 
     # ✅ Load court image
     court_img = mpimg.imread("fiba_courtonly.jpg")
 
     # ✅ Create figure
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.imshow(court_img, extent=[0, 280, 0, 261], aspect="auto")
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.set_aspect("equal")
 
-    # ✅ Heatmap (density plot for shooting zones)
-    sns.kdeplot(data=df_shots, x="x_coord", y="y_coord", cmap="coolwarm", fill=True, alpha=0.6, ax=ax, bw_adjust=0.5)
+    # ✅ Display court background
+    ax.imshow(court_img, extent=[0, 280, 0, 150], aspect="auto")
 
     # ✅ Separate made & missed shots
     made_shots = df_shots[df_shots["shot_result"] == "made"]
     missed_shots = df_shots[df_shots["shot_result"] == "missed"]
 
-    # ✅ Debugging: Check if made/missed shots exist
-    st.write(f"Total Shots: {len(df_shots)}, Made: {len(made_shots)}, Missed: {len(missed_shots)}")
+    # ✅ Ensure shots are within the court boundary
+    made_shots = made_shots[(made_shots["x_coord"].between(0, 280)) & (made_shots["y_coord"].between(0, 150))]
+    missed_shots = missed_shots[(missed_shots["x_coord"].between(0, 280)) & (missed_shots["y_coord"].between(0, 150))]
 
-    # ✅ Try different shot marker styles
-ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
-           c="deepskyblue", edgecolors="black", s=60, alpha=0.9, marker="o", label="Made Shots")
+    # ✅ Plot individual shots with distinct markers and larger size
+    ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
+               c="deepskyblue", edgecolors="black", s=100, alpha=0.9, marker="o", label="Made Shots", zorder=3)
 
-ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
-           c="tomato", edgecolors="black", s=60, alpha=0.9, marker="x", label="Missed Shots")
+    ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
+               c="tomato", edgecolors="black", s=100, alpha=0.9, marker="x", label="Missed Shots", zorder=3)
 
-# ✅ Remove axis labels (clean shot chart)
-ax.set_xticks([])
-ax.set_yticks([])
-ax.set_xticklabels([])
-ax.set_yticklabels([])
-ax.axis("off")  # Hide axis
+    # ✅ Remove all axis elements (clean chart)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.axis("off")  # Hide axis
 
-# ✅ Ensure this line is correctly indented (same level as previous lines)
-st.pyplot(fig)  
-
+    # ✅ Display chart in Streamlit
+    st.pyplot(fig)
 
 # ✅ Main Function
 def main():
