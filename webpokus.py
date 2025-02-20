@@ -158,17 +158,15 @@ ax.scatter(made_shots["x_coord"], made_shots["y_coord"],
 ax.scatter(missed_shots["x_coord"], missed_shots["y_coord"], 
            c="tomato", edgecolors="black", s=60, alpha=0.9, marker="x", label="Missed Shots")
 
-
-   # ✅ Remove axis labels (clean shot chart)
+# ✅ Remove axis labels (clean shot chart)
 ax.set_xticks([])
 ax.set_yticks([])
 ax.set_xticklabels([])
 ax.set_yticklabels([])
 ax.axis("off")  # Hide axis
 
-
-    # ✅ Display chart in Streamlit
-    st.pyplot(fig)
+# ✅ Ensure this line is correctly indented (same level as previous lines)
+st.pyplot(fig)  
 
 
 # ✅ Main Function
