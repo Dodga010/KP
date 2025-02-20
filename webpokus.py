@@ -98,7 +98,7 @@ def fetch_players():
 
 # ✅ Generate Shot Chart
 def generate_shot_chart(player_name):
-    """Generate a shot chart with heatmap restricted within the court boundaries."""
+    """Generate a shot chart with player shooting statistics."""
 
     if not os.path.exists("fiba_courtonly.jpg"):
         st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
@@ -106,7 +106,7 @@ def generate_shot_chart(player_name):
 
     conn = sqlite3.connect(db_path)
     query = """
-    SELECT x_coord, y_coord, shot_result
+    SELECT x_coord, y_coord, shot_result, actionType
     FROM Shots 
     WHERE player_name = ?;
     """
@@ -117,13 +117,44 @@ def generate_shot_chart(player_name):
         st.warning(f"❌ No shot data found for {player_name}.")
         return
 
-    # ✅ Convert shot_result to match 'made' or 'missed' conditions
-    df_shots["shot_result"] = df_shots["shot_result"].astype(str)
-    df_shots["shot_result"] = df_shots["shot_result"].replace({"1": "made", "0": "missed"})
+    # ✅ Convert shot result to match 'made' or 'missed' conditions
+    df_shots["shot_result"] = df_shots["shot_result"].astype(str).replace({"1": "made", "0": "missed"})
 
     # ✅ Scale coordinates to match court image dimensions
     df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
     df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.61)
+
+    # ✅ Compute Shooting Statistics
+    total_shots = len(df_shots)
+    made_shots = len(df_shots[df_shots["shot_result"] == "made"])
+    fg_percentage = round((made_shots / total_shots) * 100, 1) if total_shots > 0 else 0
+
+    # ✅ 3PT Shooting Stats
+    three_point_shots = df_shots[df_shots["actionType"] == "3pt"]
+    total_3pt_shots = len(three_point_shots)
+    made_3pt_shots = len(three_point_shots[three_point_shots["shot_result"] == "made"])
+    three_pt_percentage = round((made_3pt_shots / total_3pt_shots) * 100, 1) if total_3pt_shots > 0 else 0
+
+    # ✅ Shot Zones: Mid-Range vs. Paint
+    df_shots["distance"] = ((df_shots["x_coord"] - 140) ** 2 + (df_shots["y_coord"] - 26) ** 2) ** 0.5
+    mid_range_shots = df_shots[(df_shots["distance"] > 3) & (df_shots["distance"] < 6.75)]
+    paint_shots = df_shots[df_shots["distance"] <= 3]
+
+    mid_range_fg = round((len(mid_range_shots[mid_range_shots["shot_result"] == "made"]) / len(mid_range_shots)) * 100, 1) if len(mid_range_shots) > 0 else 0
+    paint_fg = round((len(paint_shots[paint_shots["shot_result"] == "made"]) / len(paint_shots)) * 100, 1) if len(paint_shots) > 0 else 0
+
+    # ✅ Most Frequent Shot Location
+    most_frequent_x = df_shots["x_coord"].mode()[0] if not df_shots["x_coord"].empty else 0
+    most_frequent_y = df_shots["y_coord"].mode()[0] if not df_shots["y_coord"].empty else 0
+
+    # ✅ Display Shooting Statistics in Streamlit
+    st.subheader(f"📊 {player_name} Shooting Stats")
+    st.write(f"- **Total Shots Taken:** {total_shots}")
+    st.write(f"- **Field Goal %:** {fg_percentage}%")
+    st.write(f"- **3-Point FG %:** {three_pt_percentage}%")
+    st.write(f"- **Mid-Range FG %:** {mid_range_fg}%")
+    st.write(f"- **Paint FG %:** {paint_fg}%")
+    st.write(f"- **Most Frequent Shot Location:** ({round(most_frequent_x, 1)}, {round(most_frequent_y, 1)})")
 
     # ✅ Load court image
     court_img = mpimg.imread("fiba_courtonly.jpg")
@@ -137,7 +168,7 @@ def generate_shot_chart(player_name):
         data=df_shots, 
         x="x_coord", y="y_coord", 
         cmap="coolwarm", fill=True, alpha=0.5, ax=ax, 
-        bw_adjust=0.5, clip=[[0, 280], [0, 261]]  # 🔥 Restrict heatmap within the court
+        bw_adjust=0.5, clip=[[0, 280], [0, 261]]
     )
 
     # ✅ Plot individual shots
@@ -159,6 +190,7 @@ def generate_shot_chart(player_name):
 
     # ✅ Display chart in Streamlit
     st.pyplot(fig)
+
 
 # ✅ Main Function
 def main():
