@@ -1,18 +1,13 @@
-import os
 import sqlite3
+import os
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# ✅ Define database path (works locally & online)
+# ✅ Define SQLite database path (works locally and online)
 db_path = os.path.join(os.path.dirname(__file__), "database.db")
 
-# ✅ Check if the database file exists
-if not os.path.exists(db_path):
-    st.error(f"⚠️ Database file not found at {db_path}. Please upload the correct database file.")
-    st.stop()  # Stop execution if the database is missing
-
-# ✅ Function to check if a table exists in the database
+# ✅ Function to check if a table exists
 def table_exists(table_name):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -21,7 +16,7 @@ def table_exists(table_name):
     conn.close()
     return exists
 
-# ✅ Fetch team data (averages per game) with error handling
+# ✅ Fetch team data (averages per game)
 def fetch_team_data():
     if not table_exists("Teams"):
         st.error("⚠️ Error: 'Teams' table not found in the database.")
@@ -50,22 +45,18 @@ def fetch_team_data():
     conn.close()
     return df
 
-# ✅ Fetch referee statistics with error handling
-def fetch_referee_data():
-    if not table_exists("Officials"):
-        st.error("⚠️ Error: 'Officials' table not found in the database.")
-        return pd.DataFrame()
+# ✅ Fetch top 5 teams by assists per game
+def fetch_top_assist_teams():
+    if not table_exists("Teams"):
+        return pd.DataFrame()  
 
     conn = sqlite3.connect(db_path)
     query = """
-    SELECT o.first_name || ' ' || o.last_name AS Referee,
-           COUNT(t.game_id) AS Games_Officiated,
-           AVG(t.fouls_total) AS Avg_Fouls_per_Game
-    FROM Officials o
-    JOIN Teams t ON o.game_id = t.game_id
-    WHERE o.role NOT LIKE 'commissioner'
-    GROUP BY Referee
-    ORDER BY Avg_Fouls_per_Game DESC;
+    SELECT name AS Team, AVG(assists) AS Avg_Assists
+    FROM Teams
+    GROUP BY name
+    ORDER BY Avg_Assists DESC
+    LIMIT 5;
     """
     df = pd.read_sql(query, conn)
     conn.close()
@@ -96,6 +87,15 @@ def main():
                          title=f"{stat_choice} Comparison Between Teams (Per Game)",
                          barmode="group")
             st.plotly_chart(fig)
+
+            # ✅ New Table: Top 5 Teams with Most Assists Per Game
+            st.subheader("🏆 Top 5 Teams with Most Assists Per Game")
+            top_assists_df = fetch_top_assist_teams()
+
+            if top_assists_df.empty:
+                st.warning("No data available for assists.")
+            else:
+                st.dataframe(top_assists_df.style.format({"Avg_Assists": "{:.1f}"}))
 
     elif page == "Head-to-Head Comparison":
         df = fetch_team_data()
