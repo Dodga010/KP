@@ -117,9 +117,6 @@ def generate_shot_chart(player_name):
         st.warning(f"❌ No shot data found for {player_name}.")
         return
 
-    # ✅ Debugging: Check shot result values and transformed coordinates
-    st.write("Shot Data Sample:", df_shots.head())
-
     # ✅ Convert shot_result to match 'made' or 'missed' conditions
     df_shots["shot_result"] = df_shots["shot_result"].astype(str)
     df_shots["shot_result"] = df_shots["shot_result"].replace({"1": "made", "0": "missed"})
