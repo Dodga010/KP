@@ -82,14 +82,14 @@ def fetch_referee_data():
     conn.close()
     return df
 
-# ✅ Streamlit App
 def main():
     st.title("🏀 Basketball Stats Viewer")
 
     # Sidebar navigation
     page = st.sidebar.selectbox("📌 Choose a page", ["Team Season Boxscore", "Head-to-Head Comparison", "Referee Stats"])
 
-        elif page == "Team Season Boxscore":
+    # ✅ FIX: This should be `if`, not `elif`
+    if page == "Team Season Boxscore":
         df = fetch_team_data()
 
         if df.empty:
@@ -108,7 +108,7 @@ def main():
                          barmode="group")
             st.plotly_chart(fig)
 
-            # ✅ REPLACE Top Assists Table with Assists vs Turnovers Graph
+            # ✅ FIX: Replace Top Assists Table with Assists vs Turnovers Graph
             st.subheader("📉 Assists vs. Turnovers (Lost Plays)")
             assists_turnovers_df = fetch_assists_vs_turnovers()
 
@@ -124,7 +124,6 @@ def main():
                 )
                 fig_scatter.update_traces(textposition='top center')
                 st.plotly_chart(fig_scatter)
-
 
     elif page == "Head-to-Head Comparison":
         df = fetch_team_data()
@@ -186,3 +185,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
