@@ -111,7 +111,9 @@ def generate_shot_chart(player_name):
         return
 
     # Load court image
-    court_img = mpimg.imread("fiba_courtonly.jpg")
+    import os
+    if not os.path.exists("fiba_courtonly.jpg"):
+    st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
 
     # Scale coordinates to match court image dimensions
     df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
@@ -148,7 +150,7 @@ def main():
     st.title("🏀 Basketball Stats Viewer")
 
     # Sidebar navigation
-    page = st.sidebar.selectbox("📌 Choose a page", ["Team Season Boxscore", "Head-to-Head Comparison", "Referee Stats"])
+   page = st.sidebar.selectbox("📌 Choose a page", ["Team Season Boxscore", "Head-to-Head Comparison", "Referee Stats", "Shot Chart"])
 
     # ✅ FIX: This should be `if`, not `elif`
     if page == "Team Season Boxscore":
