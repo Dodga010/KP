@@ -177,8 +177,8 @@ def main():
             numeric_cols = df.select_dtypes(include=['number']).columns
             st.dataframe(df.style.format({col: "{:.1f}" for col in numeric_cols}))
 
-elif page == "Head-to-Head Comparison":
-        df = fetch_team_data()
+    elif page == "Head-to-Head Comparison":
+        df = fetch_team_data()  
         if df.empty:
             st.warning("No team data available.")
             return
@@ -218,7 +218,7 @@ elif page == "Head-to-Head Comparison":
                 fig2 = px.bar(team2_stats, x="Stat", y="Value", title=f"{team2} Stats Per Game", color="Stat")
                 st.plotly_chart(fig2)
 
- elif page == "Referee Stats":
+    elif page == "Referee Stats":
         df_referee = fetch_referee_data()
 
         if df_referee.empty:
@@ -235,7 +235,7 @@ elif page == "Head-to-Head Comparison":
                                  color="Referee")
             st.plotly_chart(fig_referee)
 
- elif page == "Shot Chart":
+    elif page == "Shot Chart":
         st.subheader("🎯 Player Shot Chart")
         players = fetch_players()
         if not players:
