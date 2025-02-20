@@ -4,15 +4,10 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# ✅ Define database path (works locally & online)
+# ✅ Define SQLite database path (works locally & online)
 db_path = os.path.join(os.path.dirname(__file__), "database.db")
 
-# ✅ Check if the database file exists
-if not os.path.exists(db_path):
-    st.error(f"⚠️ Database file not found at {db_path}. Please upload the correct database file.")
-    st.stop()  # Stop execution if the database is missing
-
-# ✅ Function to check if a table exists in the database
+# ✅ Function to check if a table exists
 def table_exists(table_name):
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
@@ -21,7 +16,7 @@ def table_exists(table_name):
     conn.close()
     return exists
 
-# ✅ Fetch team data (averages per game) with error handling
+# ✅ Fetch team data (averages per game)
 def fetch_team_data():
     if not table_exists("Teams"):
         st.error("⚠️ Error: 'Teams' table not found in the database.")
@@ -49,8 +44,9 @@ def fetch_team_data():
     df = pd.read_sql(query, conn)
     conn.close()
     return df
-    
-    def fetch_top_assist_teams():
+
+# ✅ NEW: Fetch top 5 teams by assists per game
+def fetch_top_assist_teams():
     if not table_exists("Teams"):
         return pd.DataFrame()  
 
@@ -66,8 +62,7 @@ def fetch_team_data():
     conn.close()
     return df
 
-
-# ✅ Fetch referee statistics with error handling
+# ✅ Fetch referee statistics
 def fetch_referee_data():
     if not table_exists("Officials"):
         st.error("⚠️ Error: 'Officials' table not found in the database.")
@@ -95,7 +90,7 @@ def main():
     # Sidebar navigation
     page = st.sidebar.selectbox("📌 Choose a page", ["Team Season Boxscore", "Head-to-Head Comparison", "Referee Stats"])
 
-   elif page == "Team Season Boxscore":
+    if page == "Team Season Boxscore":
         df = fetch_team_data()
 
         if df.empty:
@@ -114,7 +109,7 @@ def main():
                          barmode="group")
             st.plotly_chart(fig)
 
-            # ✅ ADD THIS SECTION TO SHOW TOP 5 TEAMS WITH MOST ASSISTS
+            # ✅ NEW: Top 5 Teams by Assists Per Game
             st.subheader("🏆 Top 5 Teams with Most Assists Per Game")
             top_assists_df = fetch_top_assist_teams()
 
