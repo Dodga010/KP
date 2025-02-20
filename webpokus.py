@@ -78,7 +78,7 @@ def main():
     # Sidebar navigation
     page = st.sidebar.selectbox("📌 Choose a page", ["Team Season Boxscore", "Head-to-Head Comparison", "Referee Stats"])
 
-    if page == "Team Season Boxscore":
+   elif page == "Team Season Boxscore":
         df = fetch_team_data()
 
         if df.empty:
@@ -96,6 +96,15 @@ def main():
                          title=f"{stat_choice} Comparison Between Teams (Per Game)",
                          barmode="group")
             st.plotly_chart(fig)
+
+            # ✅ ADD THIS SECTION TO SHOW TOP 5 TEAMS WITH MOST ASSISTS
+            st.subheader("🏆 Top 5 Teams with Most Assists Per Game")
+            top_assists_df = fetch_top_assist_teams()
+
+            if top_assists_df.empty:
+                st.warning("No data available for assists.")
+            else:
+                st.dataframe(top_assists_df.style.format({"Avg_Assists": "{:.1f}"}))
 
     elif page == "Head-to-Head Comparison":
         df = fetch_team_data()
