@@ -1,13 +1,33 @@
+import os
 import sqlite3
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# Function to fetch team **average stats per game**
-def fetch_team_data():
-    db_path = "C:\\Users\\dolez\\Desktop\\KP_Brno\\database.db"
-    conn = sqlite3.connect(db_path)
+# ✅ Define database path (works locally & online)
+db_path = os.path.join(os.path.dirname(__file__), "database.db")
 
+# ✅ Check if the database file exists
+if not os.path.exists(db_path):
+    st.error(f"⚠️ Database file not found at {db_path}. Please upload the correct database file.")
+    st.stop()  # Stop execution if the database is missing
+
+# ✅ Function to check if a table exists in the database
+def table_exists(table_name):
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{table_name}';")
+    exists = cursor.fetchone() is not None
+    conn.close()
+    return exists
+
+# ✅ Fetch team data (averages per game) with error handling
+def fetch_team_data():
+    if not table_exists("Teams"):
+        st.error("⚠️ Error: 'Teams' table not found in the database.")
+        return pd.DataFrame()  # Return empty DataFrame
+
+    conn = sqlite3.connect(db_path)
     query = """
     SELECT 
         name AS Team,
@@ -26,18 +46,20 @@ def fetch_team_data():
     GROUP BY name, tm
     ORDER BY Avg_Points DESC;
     """
-    
     df = pd.read_sql(query, conn)
     conn.close()
     return df
 
-# Function to fetch referee stats
+# ✅ Fetch referee statistics with error handling
 def fetch_referee_data():
-    db_path = "C:\\Users\\dolez\\Desktop\\KP_Brno\\database.db"
-    conn = sqlite3.connect(db_path)
+    if not table_exists("Officials"):
+        st.error("⚠️ Error: 'Officials' table not found in the database.")
+        return pd.DataFrame()
 
+    conn = sqlite3.connect(db_path)
     query = """
     SELECT o.first_name || ' ' || o.last_name AS Referee,
+           COUNT(t.game_id) AS Games_Officiated,
            AVG(t.fouls_total) AS Avg_Fouls_per_Game
     FROM Officials o
     JOIN Teams t ON o.game_id = t.game_id
@@ -45,12 +67,11 @@ def fetch_referee_data():
     GROUP BY Referee
     ORDER BY Avg_Fouls_per_Game DESC;
     """
-    
     df = pd.read_sql(query, conn)
     conn.close()
     return df
 
-# Streamlit app
+# ✅ Streamlit App
 def main():
     st.title("🏀 Basketball Stats Viewer")
 
@@ -60,21 +81,28 @@ def main():
     if page == "Team Season Boxscore":
         df = fetch_team_data()
 
-        st.subheader("📊 Season Team Statistics (Averages Per Game)")
-        numeric_cols = df.select_dtypes(include=['number']).columns
-        st.dataframe(df.style.format({col: "{:.1f}" for col in numeric_cols}))
+        if df.empty:
+            st.warning("No team data available.")
+        else:
+            st.subheader("📊 Season Team Statistics (Averages Per Game)")
+            numeric_cols = df.select_dtypes(include=['number']).columns
+            st.dataframe(df.style.format({col: "{:.1f}" for col in numeric_cols}))
 
-        # 📊 Bar Chart Comparing Teams
-        st.subheader("🔎 Compare Key Team Stats")
-        stat_choice = st.selectbox("Select a statistic to compare:", df.columns[3:])
-        fig = px.bar(df, x="Team", y=stat_choice, color="Location",
-                     labels={stat_choice: stat_choice}, 
-                     title=f"{stat_choice} Comparison Between Teams (Per Game)",
-                     barmode="group")
-        st.plotly_chart(fig)
+            # 📊 Bar Chart Comparing Teams
+            st.subheader("🔎 Compare Key Team Stats")
+            stat_choice = st.selectbox("Select a statistic to compare:", df.columns[3:])
+            fig = px.bar(df, x="Team", y=stat_choice, color="Location",
+                         labels={stat_choice: stat_choice}, 
+                         title=f"{stat_choice} Comparison Between Teams (Per Game)",
+                         barmode="group")
+            st.plotly_chart(fig)
 
     elif page == "Head-to-Head Comparison":
         df = fetch_team_data()
+        if df.empty:
+            st.warning("No team data available.")
+            return
+
         team_options = df["Team"].unique()
 
         # Select two teams to compare
@@ -85,16 +113,14 @@ def main():
         if team1 != team2:
             st.subheader(f"📊 Season Stats Comparison: {team1} vs {team2}")
 
-            # **Fix: Ensure teams exist in dataset before comparing**
-            if team1 not in df["Team"].values or team2 not in df["Team"].values:
-                st.error("⚠️ Error: One or both teams do not exist in the dataset.")
-            else:
-                # **Fix: Select only numeric columns for comparison**
-                numeric_cols = df.columns[3:]  # Exclude 'Team', 'Location', 'Games_Played'
-                team1_stats = df[df["Team"] == team1][numeric_cols]
-                team2_stats = df[df["Team"] == team2][numeric_cols]
+            numeric_cols = df.columns[3:]  # Exclude 'Team', 'Location', 'Games_Played'
+            team1_stats = df[df["Team"] == team1][numeric_cols]
+            team2_stats = df[df["Team"] == team2][numeric_cols]
 
-                # **Fix: Transpose and keep correct stat names**
+            if team1_stats.empty or team2_stats.empty:
+                st.error("⚠️ Error: One or both teams have no recorded stats.")
+            else:
+                # Transpose and keep correct stat names
                 team1_stats = team1_stats.T.rename(columns={team1_stats.index[0]: "Value"})
                 team2_stats = team2_stats.T.rename(columns={team2_stats.index[0]: "Value"})
 
@@ -115,16 +141,19 @@ def main():
     elif page == "Referee Stats":
         df_referee = fetch_referee_data()
 
-        st.subheader("🦺 Referee Statistics")
-        st.dataframe(df_referee.style.format({"Avg_Fouls_per_Game": "{:.1f}"}))
+        if df_referee.empty:
+            st.warning("No referee data available.")
+        else:
+            st.subheader("🦺 Referee Statistics")
+            st.dataframe(df_referee.style.format({"Avg_Fouls_per_Game": "{:.1f}"}))
 
-        # 📊 Interactive bar chart for referees
-        st.subheader("📉 Referee Stats: Average Fouls Called Per Game")
-        fig_referee = px.bar(df_referee, x="Referee", y="Avg_Fouls_per_Game",
-                             labels={'Avg_Fouls_per_Game': 'Avg Fouls per Game'},
-                             title="Average Fouls Per Game by Referee",
-                             color="Referee")
-        st.plotly_chart(fig_referee)
+            # 📊 Interactive bar chart for referees
+            st.subheader("📉 Referee Stats: Average Fouls Called Per Game")
+            fig_referee = px.bar(df_referee, x="Referee", y="Avg_Fouls_per_Game",
+                                 labels={'Avg_Fouls_per_Game': 'Avg Fouls per Game'},
+                                 title="Average Fouls Per Game by Referee",
+                                 color="Referee")
+            st.plotly_chart(fig_referee)
 
 if __name__ == "__main__":
     main()
