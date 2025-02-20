@@ -177,7 +177,7 @@ def main():
             numeric_cols = df.select_dtypes(include=['number']).columns
             st.dataframe(df.style.format({col: "{:.1f}" for col in numeric_cols}))
 
-    if page == "Head-to-Head Comparison":
+  elif page == "Head-to-Head Comparison":
     df = fetch_team_data()
     
     if df.empty:
@@ -217,6 +217,7 @@ def main():
                 st.plotly_chart(radar_chart)
         else:
             st.warning("Please select two different teams for comparison.")
+
 
 
     elif page == "Referee Stats":
