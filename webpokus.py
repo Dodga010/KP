@@ -98,7 +98,7 @@ def fetch_players():
 
 
 def generate_shot_chart(player_name):
-    """Generate a shot chart that correctly plots shots with proper scaling."""
+    """Generate a shot chart with heatmap restricted within the court boundaries."""
 
     if not os.path.exists("fiba_courtonly.jpg"):
         st.error("⚠️ Court image file 'fiba_courtonly.jpg' is missing!")
@@ -117,22 +117,16 @@ def generate_shot_chart(player_name):
         st.warning(f"❌ No shot data found for {player_name}.")
         return
 
-    # ✅ Debugging: Check what shot_result values exist
+    # ✅ Debugging: Check shot result values and transformed coordinates
     st.write("Shot Data Sample:", df_shots.head())
-    st.write("Unique Shot Results:", df_shots["shot_result"].unique())
 
     # ✅ Convert shot_result to match 'made' or 'missed' conditions
-    if df_shots["shot_result"].dtype != object:
-        df_shots["shot_result"] = df_shots["shot_result"].astype(str)
-
+    df_shots["shot_result"] = df_shots["shot_result"].astype(str)
     df_shots["shot_result"] = df_shots["shot_result"].replace({"1": "made", "0": "missed"})
 
     # ✅ Scale coordinates to match court image dimensions
     df_shots["x_coord"] = df_shots["x_coord"] * 2.8  
     df_shots["y_coord"] = 261 - (df_shots["y_coord"] * 2.61)
-
-    # ✅ Debugging: Check transformed coordinates
-    st.write("Transformed Coordinates:", df_shots.head())
 
     # ✅ Load court image
     court_img = mpimg.imread("fiba_courtonly.jpg")
@@ -141,17 +135,18 @@ def generate_shot_chart(player_name):
     fig, ax = plt.subplots(figsize=(8, 6))
     ax.imshow(court_img, extent=[0, 280, 0, 261], aspect="auto")
 
-    # ✅ Heatmap (density plot for shooting zones)
-    sns.kdeplot(data=df_shots, x="x_coord", y="y_coord", cmap="coolwarm", fill=True, alpha=0.5, ax=ax, bw_adjust=0.5)
+    # ✅ Heatmap (restrict to court area)
+    sns.kdeplot(
+        data=df_shots, 
+        x="x_coord", y="y_coord", 
+        cmap="coolwarm", fill=True, alpha=0.5, ax=ax, 
+        bw_adjust=0.5, clip=[[0, 280], [0, 261]]  # 🔥 Restrict heatmap within the court
+    )
 
-    # ✅ Separate made & missed shots
+    # ✅ Plot individual shots
     made_shots = df_shots[df_shots["shot_result"] == "made"]
     missed_shots = df_shots[df_shots["shot_result"] == "missed"]
 
-    # ✅ Debugging: Check if made/missed shots exist
-    st.write(f"Total Shots: {len(df_shots)}, Made: {len(made_shots)}, Missed: {len(missed_shots)}")
-
-    # ✅ Plot individual shots with large visible markers
     ax.scatter(made_shots["x_coord"], made_shots["y_coord"], 
                c="lime", edgecolors="black", s=35, alpha=1, zorder=3, label="Made Shots")
 
